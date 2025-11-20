@@ -126,7 +126,7 @@
 <script>
 // ========== CONFIGURATION - EDIT HERE ==========
 // Your Google Apps Script Webhook URL
-const webhookUrl = 'https://script.google.com/macros/s/AKfycbz6BhoFczJwcCrJWuHdaywj9DtAbXVBZioJG33D0uEjIpr9XrxmCaGGIytZK6DTPv0yvQ/exec'
+const webhookUrl = 'https://script.googleapis.com/macros/d/YOUR_SCRIPT_ID/usercontent';
 
 // Student data by grade
 const studentData = {
@@ -264,13 +264,13 @@ function renderLists() {
   });
 
   absentList.innerHTML = '';
-  absentStudents.forEach(name => {
+  absentStudents.forEach((name, index) => {
     const item = document.createElement('div');
     item.className = 'student-item';
     
     const nameSpan = document.createElement('span');
     nameSpan.className = 'student-name';
-    nameSpan.textContent = name;
+    nameSpan.textContent = `${index + 1}. ${name}`;
     
     const deleteBtn = document.createElement('button');
     deleteBtn.className = 'delete-btn';
@@ -287,13 +287,13 @@ function renderLists() {
   });
 
   odList.innerHTML = '';
-  odStudents.forEach(name => {
+  odStudents.forEach((name, index) => {
     const item = document.createElement('div');
     item.className = 'student-item';
     
     const nameSpan = document.createElement('span');
     nameSpan.className = 'student-name';
-    nameSpan.textContent = name;
+    nameSpan.textContent = `${index + 1}. ${name}`;
     
     const deleteBtn = document.createElement('button');
     deleteBtn.className = 'delete-btn';
@@ -351,8 +351,8 @@ function buildSummaryMessage() {
       msg += `\nAll Present`;
     } else {
       msg += `\nAbsentees list:`;
-      data.absent.forEach(nm => {
-        msg += `\n${nm}`;
+      data.absent.forEach((nm, index) => {
+        msg += `\n${index + 1}. ${nm}`;
       });
     }
     
@@ -364,8 +364,8 @@ function buildSummaryMessage() {
       } else {
         msg += `\nOD students:`;
       }
-      data.od.forEach(nm => {
-        msg += `\n${nm}`;
+      data.od.forEach((nm, index) => {
+        msg += `\n${index + 1}. ${nm}`;
       });
     }
   });
@@ -449,17 +449,25 @@ function renderSummary() {
     if (gradeData.absent.length === 0) {
       summaryText += `<div class="summary-names"><span class="all-present-text">✓ All Present</span></div>`;
     } else {
-      summaryText += `<div class="summary-names"><b>Absent:</b> ${gradeData.absent.join(', ')}</div>`;
+      summaryText += `<div class="summary-names"><b>Absent:</b><br>`;
+      gradeData.absent.forEach((nm, index) => {
+        summaryText += `${index + 1}. ${nm}<br>`;
+      });
+      summaryText += `</div>`;
     }
     
     // Show OD students only if they exist
     if (gradeData.od.length > 0) {
       const odReason = gradeData.odReason || '';
       if (odReason) {
-        summaryText += `<div class="summary-od">🚌 OD (${odReason}): ${gradeData.od.join(', ')}</div>`;
+        summaryText += `<div class="summary-od">🚌 OD (${odReason}):<br>`;
       } else {
-        summaryText += `<div class="summary-od">🚌 OD: ${gradeData.od.join(', ')}</div>`;
+        summaryText += `<div class="summary-od">🚌 OD:<br>`;
       }
+      gradeData.od.forEach((nm, index) => {
+        summaryText += `${index + 1}. ${nm}<br>`;
+      });
+      summaryText += `</div>`;
     }
     
     summaryText += `</div>`;
