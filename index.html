@@ -360,10 +360,13 @@ function buildSummaryMessage() {
     if (data.od.length > 0) {
       const odReason = data.odReason || '';
       if (odReason) {
-        msg += `\nOD students (${odReason}): ${data.od.join(', ')}`;
+        msg += `\nOD students (${odReason}):`;
       } else {
-        msg += `\nOD students: ${data.od.join(', ')}`;
+        msg += `\nOD students:`;
       }
+      data.od.forEach(nm => {
+        msg += `\n${nm}`;
+      });
     }
   });
   
