@@ -252,6 +252,7 @@ function renderLists() {
     checkbox.type = 'checkbox';
     checkbox.className = 'student-checkbox';
     checkbox.dataset.name = name;
+    checkbox.onchange = () => updateMoveButtons();
     
     const nameSpan = document.createElement('span');
     nameSpan.className = 'student-name';
@@ -312,14 +313,18 @@ function renderLists() {
   absentCount.textContent = `(${absentStudents.length})`;
   odCount.textContent = `(${odStudents.length})`;
   
+  updateMoveButtons();
+  
+  addToSummaryBtn.disabled = !currentGrade || (absentStudents.length === 0 && odStudents.length === 0);
+  allPresentBtn.disabled = !currentGrade;
+}
+
+function updateMoveButtons() {
   const selectedCount = document.querySelectorAll('.student-checkbox:checked').length;
   const moveToAbsentBtn = document.getElementById('moveToAbsentBtn');
   const moveToODBtn = document.getElementById('moveToODBtn');
   if (moveToAbsentBtn) moveToAbsentBtn.disabled = selectedCount === 0;
   if (moveToODBtn) moveToODBtn.disabled = selectedCount === 0;
-  
-  addToSummaryBtn.disabled = !currentGrade || (absentStudents.length === 0 && odStudents.length === 0);
-  allPresentBtn.disabled = !currentGrade;
 }
 
 function buildSummaryMessage() {
@@ -525,13 +530,6 @@ document.getElementById('moveToODBtn').addEventListener('click', () => {
     odStudents.push(name);
   });
   renderLists();
-});
-
-// Enable/disable move buttons on checkbox change
-document.addEventListener('change', (e) => {
-  if (e.target.classList.contains('student-checkbox')) {
-    renderLists();
-  }
 });
 
 renderGrades();
