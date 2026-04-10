@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -127,9 +126,9 @@
 </div>
 
 <script>
-// ========== CONFIGURATION ========== https://script.google.com/macros/s/AKfycbwAioO5u-jd86_F2ktBsLi6KpXjYjBiiZr96vTxjrxUqmrSdlC3WX5SwSBy56RtNheioA/exec
-// PASTE YOUR NEW DEPLOYED WEB APP URL HERE:att2 https://script.google.com/macros/s/AKfycbyaR5FXtapTMb9ubdHjngHviYvs5_aYPjK6IN9nhuNJMYNDY_WwnXMAJXaAQznOQQr-/exec
-const webhookUrl = 'https://script.google.com/macros/s/AKfycbwAioO5u-jd86_F2ktBsLi6KpXjYjBiiZr96vTxjrxUqmrSdlC3WX5SwSBy56RtNheioA/exec';
+// ========== CONFIGURATION ==========
+// PASTE YOUR NEW DEPLOYED WEB APP URL HERE:
+const webhookUrl = 'YOUR_NEW_WEB_APP_URL_HERE';
 
 // Data starts empty and loads from Sheets automatically
 let studentData = {};
@@ -316,11 +315,14 @@ function buildSummaryMessage() {
   return msg.trim();
 }
 
+// Includes 24h Timestamp
 function buildSheetsData() {
   let today = new Date();
   const dateStr = today.toLocaleDateString('en-IN');
+  const timeStr = today.toLocaleTimeString('en-IN', { hour12: false, hour: '2-digit', minute: '2-digit' });
+  
   let data = {
-    date: dateStr,
+    date: `${dateStr} ${timeStr}`,
     entries: {}
   };
 
@@ -436,6 +438,13 @@ sendBtn.onclick = () => {
   sendBtn.disabled = true;
   const data = buildSheetsData();
 
+  // 1. Send to WhatsApp IMMEDIATELY
+  let msg = encodeURIComponent(buildSummaryMessage());
+  window.open(`https://wa.me/?text=${msg}`, '_blank');
+  
+  showStatus('✓ Opening WhatsApp...', 'success');
+
+  // 2. Save to Google Sheets in the background
   fetch(webhookUrl, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -444,11 +453,7 @@ sendBtn.onclick = () => {
   .then(response => response.json())
   .then((result) => {
     if (result.status === 'success') {
-      showStatus('✓ Data saved to Google Sheets', 'success');
-      
-      let msg = encodeURIComponent(buildSummaryMessage());
-      window.open(`https://wa.me/?text=${msg}`, '_blank');
-      
+      showStatus('✓ Data saved to Google Sheets & sent to WhatsApp!', 'success');
       setTimeout(() => {
         sendBtn.disabled = false;
       }, 800);
@@ -483,7 +488,7 @@ document.getElementById('moveToODBtn').addEventListener('click', () => {
   renderLists();
 });
 
-// Start the app by fetching names dynamically
+// Start the app by fetching names dynamically (with Cache Buster)
 async function initializeApp() {
   showStatus('⏳ Loading student lists from Google Sheets...', 'loading');
   sendBtn.disabled = true;
@@ -494,7 +499,8 @@ async function initializeApp() {
   }
 
   try {
-    const response = await fetch(webhookUrl);
+    // Adding timestamp to force browser to fetch fresh data every time
+    const response = await fetch(webhookUrl + "?t=" + new Date().getTime());
     const result = await response.json();
     
     if (result.status === 'success') {
