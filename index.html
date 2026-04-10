@@ -1,1 +1,520 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Attendance Tracker - School</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 20px; }
+    .container { max-width: 1200px; margin: 0 auto; background: #fff; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); padding: 30px; }
+    h1 { text-align: center; color: #333; margin-bottom: 30px; font-size: 2em; }
+    
+    .grade-select { display: flex; gap: 10px; margin-bottom: 30px; flex-wrap: wrap; justify-content: center; }
+    .grade-btn { padding: 12px 20px; font-size: 1em; background: #e0e7ff; border: 2px solid #e0e7ff; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.3s; }
+    .grade-btn:hover { background: #c7d2fe; border-color: #667eea; }
+    .grade-btn.active { background: #667eea; color: white; border-color: #667eea; }
+    
+    .lists-wrap { display: flex; gap: 20px; margin-bottom: 30px; }
+    .list { flex: 1; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    .list.present { background: #ecfdf5; border: 2px solid #10b981; }
+    .list.absent { background: #fef2f2; border: 2px solid #ef4444; }
+    .list.od { background: #fef3c7; border: 2px solid #f59e0b; }
+    .list-title { font-weight: 700; margin-bottom: 15px; font-size: 1.1em; }
+    .list.present .list-title { color: #10b981; }
+    .list.absent .list-title { color: #ef4444; }
+    .list.od .list-title { color: #f59e0b; }
+    
+    .student-list { max-height: 350px; overflow-y: auto; }
+    .student-item { display: flex; align-items: center; gap: 10px; background: white; border: 1px solid #ddd; padding: 10px; margin-bottom: 8px; border-radius: 6px; transition: all 0.2s; }
+    .student-item:hover { background: #f9fafb; }
+    .student-checkbox { width: 18px; height: 18px; cursor: pointer; }
+    .student-name { flex: 1; font-size: 0.95em; }
+    .delete-btn { background: #ef4444; color: white; border: none; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 0.85em; }
+    .delete-btn:hover { background: #dc2626; }
+    .move-btns { display: flex; gap: 10px; justify-content: center; margin-bottom: 15px; }
+    .move-btn { padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.9em; transition: all 0.3s; }
+    .move-to-absent { background: #ef4444; color: white; }
+    .move-to-absent:hover:not(:disabled) { background: #dc2626; }
+    .move-to-od { background: #f59e0b; color: white; }
+    .move-to-od:hover:not(:disabled) { background: #d97706; }
+    .move-btn:disabled { background: #cbd5e1; cursor: not-allowed; }
+    .od-reason-input { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px; margin-top: 10px; font-size: 0.9em; }
+    
+    .action-btns { display: flex; gap: 10px; margin-bottom: 20px; justify-content: center; }
+    .action-btn { padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.95em; transition: all 0.3s; }
+    .add-btn { background: #3b82f6; color: white; }
+    .add-btn:hover:not(:disabled) { background: #2563eb; }
+    .add-btn:disabled { background: #cbd5e1; cursor: not-allowed; }
+    .all-present-btn { background: #10b981; color: white; }
+    .all-present-btn:hover:not(:disabled) { background: #059669; }
+    .all-present-btn:disabled { background: #cbd5e1; cursor: not-allowed; }
+    
+    .summary-area { background: #f8f9fa; border: 2px solid #667eea; border-radius: 10px; padding: 20px; margin-bottom: 30px; display: none; }
+    .summary-title { font-weight: 700; margin-bottom: 15px; color: #667eea; font-size: 1.1em; }
+    .summary-list { max-height: 300px; overflow-y: auto; }
+    .summary-item { background: white; border-left: 4px solid #667eea; padding: 12px; margin-bottom: 10px; border-radius: 4px; }
+    .summary-grade { font-weight: 700; color: #667eea; }
+    .summary-stats { font-size: 0.9em; color: #666; margin: 5px 0; }
+    .summary-names { font-size: 0.9em; color: #333; margin-top: 5px; line-height: 1.5; }
+    .summary-od { font-size: 0.9em; color: #f59e0b; margin-top: 5px; line-height: 1.5; font-weight: 600; }
+    .all-present-text { color: #10b981; font-weight: 700; }
+    
+    .clear-btn { background: #f3f4f6; color: #667eea; border: 1px solid #e5e7eb; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-weight: 600; float: right; }
+    .clear-btn:hover { background: #e5e7eb; }
+    
+    .send-section { display: flex; flex-direction: column; gap: 15px; }
+    .send-btn { padding: 14px 30px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 1.05em; transition: all 0.3s; }
+    .send-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4); }
+    .send-btn:disabled { background: #cbd5e1; cursor: not-allowed; }
+    
+    .status-msg { padding: 12px 15px; border-radius: 6px; display: none; font-weight: 600; margin-bottom: 10px; text-align: center; }
+    .status-msg.success { background: #d1fae5; color: #065f46; border-left: 4px solid #10b981; display: block; }
+    .status-msg.error { background: #fee2e2; color: #991b1b; border-left: 4px solid #ef4444; display: block; }
+    .status-msg.loading { background: #e0e7ff; color: #3730a3; border-left: 4px solid #4f46e5; display: block; }
+    
+    @media (max-width: 1024px) {
+      .lists-wrap { flex-direction: column; }
+      .container { padding: 20px; }
+      h1 { font-size: 1.5em; }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>📚 Attendance Tracker</h1>
+
+  <div id="statusMsg" class="status-msg"></div>
+
+  <div class="grade-select" id="gradeSelect"></div>
+
+  <div class="lists-wrap">
+    <div class="list present">
+      <div class="list-title">✓ Present Students <span id="presentCount">(0)</span></div>
+      <div class="move-btns">
+        <button class="move-btn move-to-absent" id="moveToAbsentBtn">Mark as Absent</button>
+        <button class="move-btn move-to-od" id="moveToODBtn">Mark as OD</button>
+      </div>
+      <div class="student-list" id="presentList"></div>
+    </div>
+    <div class="list absent">
+      <div class="list-title">✗ Absentees List <span id="absentCount">(0)</span></div>
+      <div class="student-list" id="absentList"></div>
+    </div>
+    <div class="list od">
+      <div class="list-title">🚌 OD Students <span id="odCount">(0)</span></div>
+      <input type="text" class="od-reason-input" id="odReasonInput" placeholder="Reason for OD (optional)">
+      <div class="student-list" id="odList"></div>
+    </div>
+  </div>
+
+  <div class="action-btns">
+    <button class="action-btn add-btn" id="addToSummary">Add To Summary</button>
+    <button class="action-btn all-present-btn" id="allPresentBtn">All Present</button>
+  </div>
+
+  <div class="summary-area" id="summaryArea">
+    <div class="summary-title">📋 Summary for Sending</div>
+    <div class="summary-list" id="summaryContent"></div>
+    <button class="clear-btn" id="clearSummary">Clear Summary</button>
+    <div style="clear: both;"></div>
+  </div>
+
+  <div class="send-section">
+    <button class="send-btn" id="sendBtn" disabled>Send & Save to WhatsApp + Google Sheets</button>
+  </div>
+</div>
+
+<script>
+// ========== CONFIGURATION ==========
+// PASTE YOUR NEW DEPLOYED WEB APP URL HERE:
+const webhookUrl = 'https://script.google.com/macros/s/AKfycbwAioO5u-jd86_F2ktBsLi6KpXjYjBiiZr96vTxjrxUqmrSdlC3WX5SwSBy56RtNheioA/exec';
+
+// Data starts empty and loads from Sheets automatically
+let studentData = {};
+// ===================================
+
+let currentGrade = null;
+let presentStudents = [];
+let absentStudents = [];
+let odStudents = [];
+let summary = {};
+
+const gradeSelect = document.getElementById('gradeSelect');
+const presentList = document.getElementById('presentList');
+const absentList = document.getElementById('absentList');
+const odList = document.getElementById('odList');
+const presentCount = document.getElementById('presentCount');
+const absentCount = document.getElementById('absentCount');
+const odCount = document.getElementById('odCount');
+const addToSummaryBtn = document.getElementById('addToSummary');
+const allPresentBtn = document.getElementById('allPresentBtn');
+const summaryArea = document.getElementById('summaryArea');
+const summaryContent = document.getElementById('summaryContent');
+const clearSummaryBtn = document.getElementById('clearSummary');
+const sendBtn = document.getElementById('sendBtn');
+const statusMsg = document.getElementById('statusMsg');
+
+function showStatus(message, type = 'success') {
+  statusMsg.textContent = message;
+  statusMsg.className = `status-msg ${type}`;
+  if (type !== 'loading') {
+    setTimeout(() => {
+      statusMsg.className = 'status-msg';
+      statusMsg.style.display = 'none';
+    }, 5000);
+  }
+}
+
+function renderGrades() {
+  gradeSelect.innerHTML = '';
+  Object.keys(studentData).sort().forEach(grade => {
+    const btn = document.createElement('button');
+    btn.textContent = 'Grade ' + grade;
+    btn.className = 'grade-btn';
+    if (grade === currentGrade) btn.classList.add('active');
+    btn.onclick = () => selectGrade(grade);
+    gradeSelect.appendChild(btn);
+  });
+}
+
+function selectGrade(grade) {
+  currentGrade = grade;
+  presentStudents = [...studentData[grade]];
+  absentStudents = [];
+  odStudents = [];
+  renderLists();
+  renderGrades();
+}
+
+function renderLists() {
+  presentList.innerHTML = '';
+  presentStudents.forEach(name => {
+    const item = document.createElement('div');
+    item.className = 'student-item';
+    
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.className = 'student-checkbox';
+    checkbox.dataset.name = name;
+    checkbox.onchange = () => updateMoveButtons();
+    
+    const nameSpan = document.createElement('span');
+    nameSpan.className = 'student-name';
+    nameSpan.textContent = name;
+    
+    item.appendChild(checkbox);
+    item.appendChild(nameSpan);
+    presentList.appendChild(item);
+  });
+
+  absentList.innerHTML = '';
+  absentStudents.forEach((name, index) => {
+    const item = document.createElement('div');
+    item.className = 'student-item';
+    
+    const nameSpan = document.createElement('span');
+    nameSpan.className = 'student-name';
+    nameSpan.textContent = `${index + 1}. ${name}`;
+    
+    const deleteBtn = document.createElement('button');
+    deleteBtn.className = 'delete-btn';
+    deleteBtn.textContent = 'Delete';
+    deleteBtn.onclick = () => {
+      absentStudents = absentStudents.filter(n => n !== name);
+      presentStudents.push(name);
+      renderLists();
+    };
+    
+    item.appendChild(nameSpan);
+    item.appendChild(deleteBtn);
+    absentList.appendChild(item);
+  });
+
+  odList.innerHTML = '';
+  odStudents.forEach((name, index) => {
+    const item = document.createElement('div');
+    item.className = 'student-item';
+    
+    const nameSpan = document.createElement('span');
+    nameSpan.className = 'student-name';
+    nameSpan.textContent = `${index + 1}. ${name}`;
+    
+    const deleteBtn = document.createElement('button');
+    deleteBtn.className = 'delete-btn';
+    deleteBtn.textContent = 'Delete';
+    deleteBtn.onclick = () => {
+      odStudents = odStudents.filter(n => n !== name);
+      presentStudents.push(name);
+      renderLists();
+    };
+    
+    item.appendChild(nameSpan);
+    item.appendChild(deleteBtn);
+    odList.appendChild(item);
+  });
+
+  presentCount.textContent = `(${presentStudents.length})`;
+  absentCount.textContent = `(${absentStudents.length})`;
+  odCount.textContent = `(${odStudents.length})`;
+  
+  updateMoveButtons();
+  
+  addToSummaryBtn.disabled = !currentGrade || (absentStudents.length === 0 && odStudents.length === 0);
+  allPresentBtn.disabled = !currentGrade;
+}
+
+function updateMoveButtons() {
+  const selectedCount = document.querySelectorAll('.student-checkbox:checked').length;
+  const moveToAbsentBtn = document.getElementById('moveToAbsentBtn');
+  const moveToODBtn = document.getElementById('moveToODBtn');
+  if (moveToAbsentBtn) moveToAbsentBtn.disabled = selectedCount === 0;
+  if (moveToODBtn) moveToODBtn.disabled = selectedCount === 0;
+}
+
+function buildSummaryMessage() {
+  let today = new Date();
+  const dstr = today.toLocaleDateString('en-IN');
+  let msg = `${dstr}`;
+  
+  Object.entries(summary).forEach(([grade, data]) => {
+    const total = studentData[grade].length;
+    const presentCount = data.present.length + data.od.length;
+    const absentCount = data.absent.length;
+    
+    msg += `\n\nGrade: ${grade}`;
+    
+    if (data.od.length > 0) {
+      msg += `\nTotal: ${total}, Present: ${presentCount} (OD-${data.od.length}), Absent: ${absentCount}`;
+    } else {
+      msg += `\nTotal: ${total}, Present: ${presentCount}, Absent: ${absentCount}`;
+    }
+    
+    if (data.absent.length === 0) {
+      msg += `\nAll Present`;
+    } else {
+      msg += `\nAbsentees list:`;
+      data.absent.forEach((nm, index) => {
+        msg += `\n${index + 1}. ${nm}`;
+      });
+    }
+    
+    if (data.od.length > 0) {
+      const odReason = data.odReason || '';
+      if (odReason) {
+        msg += `\nOD students (${odReason}):`;
+      } else {
+        msg += `\nOD students:`;
+      }
+      data.od.forEach((nm, index) => {
+        msg += `\n${index + 1}. ${nm}`;
+      });
+    }
+  });
+  
+  return msg.trim();
+}
+
+function buildSheetsData() {
+  let today = new Date();
+  const dateStr = today.toLocaleDateString('en-IN');
+  let data = {
+    date: dateStr,
+    entries: {}
+  };
+
+  Object.entries(summary).forEach(([grade, gradeData]) => {
+    const total = studentData[grade].length;
+    const present = gradeData.present.length + gradeData.od.length;
+    const absent = gradeData.absent.length;
+    data.entries[grade] = {
+      total: total,
+      present: present,
+      absent: absent,
+      absentees: gradeData.absent.length === 0 ? [] : gradeData.absent,
+      od: gradeData.od.length === 0 ? [] : gradeData.od
+    };
+  });
+
+  return data;
+}
+
+addToSummaryBtn.onclick = () => {
+  if (currentGrade && (absentStudents.length > 0 || odStudents.length > 0)) {
+    const odReason = document.getElementById('odReasonInput').value.trim();
+    summary[currentGrade] = {
+      present: [...presentStudents],
+      absent: [...absentStudents],
+      od: [...odStudents],
+      odReason: odReason
+    };
+    renderSummary();
+  }
+};
+
+allPresentBtn.onclick = () => {
+  if (currentGrade) {
+    summary[currentGrade] = {
+      present: [...studentData[currentGrade]],
+      absent: [],
+      od: []
+    };
+    renderSummary();
+  }
+};
+
+function renderSummary() {
+  if (Object.keys(summary).length === 0) {
+    summaryArea.style.display = 'none';
+    sendBtn.disabled = true;
+    return;
+  }
+  summaryArea.style.display = 'block';
+  let summaryText = '';
+  
+  Object.entries(summary).forEach(([grade, gradeData]) => {
+    const total = studentData[grade].length;
+    const presentCount = gradeData.present.length + gradeData.od.length;
+    const absentCount = gradeData.absent.length;
+    
+    summaryText += `<div class="summary-item">`;
+    summaryText += `<div class="summary-grade">Grade ${grade}</div>`;
+    
+    if (gradeData.od.length > 0) {
+      summaryText += `<div class="summary-stats">Total: ${total} | Present: ${presentCount} (OD-${gradeData.od.length}) | Absent: ${absentCount}</div>`;
+    } else {
+      summaryText += `<div class="summary-stats">Total: ${total} | Present: ${presentCount} | Absent: ${absentCount}</div>`;
+    }
+    
+    if (gradeData.absent.length === 0) {
+      summaryText += `<div class="summary-names"><span class="all-present-text">✓ All Present</span></div>`;
+    } else {
+      summaryText += `<div class="summary-names"><b>Absent:</b><br>`;
+      gradeData.absent.forEach((nm, index) => {
+        summaryText += `${index + 1}. ${nm}<br>`;
+      });
+      summaryText += `</div>`;
+    }
+    
+    if (gradeData.od.length > 0) {
+      const odReason = gradeData.odReason || '';
+      if (odReason) {
+        summaryText += `<div class="summary-od">🚌 OD (${odReason}):<br>`;
+      } else {
+        summaryText += `<div class="summary-od">🚌 OD:<br>`;
+      }
+      gradeData.od.forEach((nm, index) => {
+        summaryText += `${index + 1}. ${nm}<br>`;
+      });
+      summaryText += `</div>`;
+    }
+    
+    summaryText += `</div>`;
+  });
+  
+  summaryContent.innerHTML = summaryText;
+  sendBtn.disabled = false;
+}
+
+clearSummaryBtn.onclick = () => {
+  summary = {};
+  renderSummary();
+};
+
+sendBtn.onclick = () => {
+  if (!webhookUrl || webhookUrl === 'YOUR_NEW_WEB_APP_URL_HERE') {
+    showStatus('⚠️ Please configure webhook URL in the code', 'error');
+    return;
+  }
+
+  if (Object.keys(summary).length === 0) {
+    showStatus('⚠️ Please add at least one grade to summary', 'error');
+    return;
+  }
+
+  sendBtn.disabled = true;
+  const data = buildSheetsData();
+
+  fetch(webhookUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(data)
+  })
+  .then(response => response.json())
+  .then((result) => {
+    if (result.status === 'success') {
+      showStatus('✓ Data saved to Google Sheets', 'success');
+      
+      let msg = encodeURIComponent(buildSummaryMessage());
+      window.open(`https://wa.me/?text=${msg}`, '_blank');
+      
+      setTimeout(() => {
+        sendBtn.disabled = false;
+      }, 800);
+    } else {
+      showStatus('✗ Error from Server: ' + result.message, 'error');
+      sendBtn.disabled = false;
+    }
+  })
+  .catch(err => {
+    showStatus('✗ Network Error: ' + err.message, 'error');
+    sendBtn.disabled = false;
+  });
+};
+
+document.getElementById('moveToAbsentBtn').addEventListener('click', () => {
+  const checkboxes = document.querySelectorAll('.student-checkbox:checked');
+  checkboxes.forEach(cb => {
+    const name = cb.dataset.name;
+    presentStudents = presentStudents.filter(n => n !== name);
+    absentStudents.push(name);
+  });
+  renderLists();
+});
+
+document.getElementById('moveToODBtn').addEventListener('click', () => {
+  const checkboxes = document.querySelectorAll('.student-checkbox:checked');
+  checkboxes.forEach(cb => {
+    const name = cb.dataset.name;
+    presentStudents = presentStudents.filter(n => n !== name);
+    odStudents.push(name);
+  });
+  renderLists();
+});
+
+// Start the app by fetching names dynamically
+async function initializeApp() {
+  showStatus('⏳ Loading student lists from Google Sheets...', 'loading');
+  sendBtn.disabled = true;
+
+  if (!webhookUrl || webhookUrl === 'YOUR_NEW_WEB_APP_URL_HERE') {
+    showStatus('⚠️ Webhook URL is missing! Add it in the code.', 'error');
+    return;
+  }
+
+  try {
+    const response = await fetch(webhookUrl);
+    const result = await response.json();
+    
+    if (result.status === 'success') {
+      studentData = result.data;
+      if (Object.keys(studentData).length === 0) {
+         showStatus('⚠️ Connected, but the Masternames sheet is empty.', 'error');
+      } else {
+         renderGrades();
+         statusMsg.style.display = 'none';
+      }
+    } else {
+      showStatus('✗ Error loading names: ' + result.message, 'error');
+    }
+  } catch (err) {
+    showStatus('✗ Could not connect. Check your Webhook URL.', 'error');
+  }
+}
+
+// Boot up
+initializeApp();
+</script>
+</body>
+</html>
